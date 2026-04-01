@@ -13,7 +13,7 @@ services:
       AGENTREC_MODEL_PATH: /app/models/checkpoints/ncf_best.pt
       AGENTREC_DATA_DIR: /app/data
     volumes:
-      - ./models/checkpoints:/app/models/checkpoints:ro
+      - ./models/checkpoints:/app/models/checkpoints
       - ./data:/app/data:ro
     depends_on:
       db:

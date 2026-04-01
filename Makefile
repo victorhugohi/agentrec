@@ -42,8 +42,8 @@ test: ## Run pytest inside the app container
 
 train: ## Run the training script inside the app container
 	docker compose run --rm \
-		-v $$(pwd)/models/checkpoints:/app/models/checkpoints \
-		-v $$(pwd)/data:/app/data \
+		-v $$(pwd)/models/checkpoints:/app/models/checkpoints:rw \
+		-v $$(pwd)/data:/app/data:ro \
 		app python scripts/train_model.py
 
 shell: ## Open a bash shell in the app container
