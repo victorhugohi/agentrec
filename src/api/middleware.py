@@ -6,7 +6,6 @@ import time
 import uuid
 from collections import defaultdict
 from contextvars import ContextVar
-from typing import Any
 
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
@@ -30,9 +29,7 @@ class RequestIdMiddleware(BaseHTTPMiddleware):
     handlers) can include it in structured responses.
     """
 
-    async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         rid = request.headers.get("x-request-id", str(uuid.uuid4()))
         request_id_var.set(rid)
         request.state.request_id = rid
@@ -56,7 +53,17 @@ class MetricsCollector:
 
     # Latency histogram bucket boundaries (seconds).
     BUCKETS: tuple[float, ...] = (
-        0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0,
+        0.005,
+        0.01,
+        0.025,
+        0.05,
+        0.1,
+        0.25,
+        0.5,
+        1.0,
+        2.5,
+        5.0,
+        10.0,
     )
 
     def __init__(self) -> None:
@@ -68,9 +75,7 @@ class MetricsCollector:
         self.model_inference_sum: float = 0.0
         self.model_inference_count: int = 0
 
-    def record_request(
-        self, method: str, path: str, status: int, duration: float
-    ) -> None:
+    def record_request(self, method: str, path: str, status: int, duration: float) -> None:
         """Record a completed HTTP request."""
         key = f"{method} {path}"
         self.request_count[key] += 1
@@ -104,9 +109,7 @@ class MetricsCollector:
         lines.append("# TYPE agentrec_requests_total counter")
         for key, count in sorted(self.request_count.items()):
             method, path = key.split(" ", 1)
-            lines.append(
-                f'agentrec_requests_total{{method="{method}",path="{path}"}} {count}'
-            )
+            lines.append(f'agentrec_requests_total{{method="{method}",path="{path}"}} {count}')
 
         # Error count
         lines.append("# HELP agentrec_request_errors_total HTTP request errors (4xx/5xx).")
@@ -128,11 +131,9 @@ class MetricsCollector:
             for b in self.BUCKETS:
                 cumulative += buckets[str(b)]
                 lines.append(
-                    f"agentrec_request_duration_seconds_bucket{{{label},le=\"{b}\"}} {cumulative}"
+                    f'agentrec_request_duration_seconds_bucket{{{label},le="{b}"}} {cumulative}'
                 )
-            cumulative += buckets["+Inf"] - sum(
-                buckets[str(b)] for b in self.BUCKETS
-            )
+            cumulative += buckets["+Inf"] - sum(buckets[str(b)] for b in self.BUCKETS)
             lines.append(
                 f'agentrec_request_duration_seconds_bucket{{{label},le="+Inf"}} {buckets["+Inf"]}'
             )
@@ -146,12 +147,8 @@ class MetricsCollector:
         # Model inference
         lines.append("# HELP agentrec_model_inference_seconds Model inference latency.")
         lines.append("# TYPE agentrec_model_inference_seconds summary")
-        lines.append(
-            f"agentrec_model_inference_seconds_sum {self.model_inference_sum:.6f}"
-        )
-        lines.append(
-            f"agentrec_model_inference_seconds_count {self.model_inference_count}"
-        )
+        lines.append(f"agentrec_model_inference_seconds_sum {self.model_inference_sum:.6f}")
+        lines.append(f"agentrec_model_inference_seconds_count {self.model_inference_count}")
 
         return "\n".join(lines) + "\n"
 
@@ -163,16 +160,17 @@ metrics_collector = MetricsCollector()
 class MetricsMiddleware(BaseHTTPMiddleware):
     """Record request count and latency for every request."""
 
-    async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         start = time.perf_counter()
         response = await call_next(request)
         duration = time.perf_counter() - start
         # Normalise path to avoid high-cardinality labels from path params.
         path = self._normalise_path(request.url.path)
         metrics_collector.record_request(
-            request.method, path, response.status_code, duration,
+            request.method,
+            path,
+            response.status_code,
+            duration,
         )
         return response
 

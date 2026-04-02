@@ -7,7 +7,6 @@ from src.agents.content_analyzer import ContentAnalyzerAgent
 from src.agents.user_profiler import UserProfilerAgent
 from src.models.embeddings import EmbeddingStore
 
-
 # ── Fixtures ─────────────────────────────────────────────────────────
 
 EMBEDDING_DIM = 32
@@ -21,34 +20,38 @@ def store() -> EmbeddingStore:
 @pytest.fixture
 def ratings_df() -> pd.DataFrame:
     """Synthetic ratings with contiguous 0-based IDs and normalised ratings."""
-    return pd.DataFrame({
-        "userId": [0, 0, 0, 0, 0, 1, 1, 1, 1, 1],
-        "movieId": [0, 1, 2, 3, 4, 0, 1, 2, 3, 4],
-        "rating": [1.0, 0.8, 0.6, 0.4, 0.2, 0.5, 0.9, 0.3, 0.7, 0.1],
-        "timestamp": [100, 200, 300, 400, 500, 110, 210, 310, 410, 510],
-    })
+    return pd.DataFrame(
+        {
+            "userId": [0, 0, 0, 0, 0, 1, 1, 1, 1, 1],
+            "movieId": [0, 1, 2, 3, 4, 0, 1, 2, 3, 4],
+            "rating": [1.0, 0.8, 0.6, 0.4, 0.2, 0.5, 0.9, 0.3, 0.7, 0.1],
+            "timestamp": [100, 200, 300, 400, 500, 110, 210, 310, 410, 510],
+        }
+    )
 
 
 @pytest.fixture
 def movies_df() -> pd.DataFrame:
     """Synthetic movies with contiguous 0-based IDs."""
-    return pd.DataFrame({
-        "movieId": [0, 1, 2, 3, 4],
-        "title": [
-            "Alpha (2000)",
-            "Beta (2001)",
-            "Gamma (2002)",
-            "Delta (2003)",
-            "Epsilon (2004)",
-        ],
-        "genres": [
-            "Action|Comedy",
-            "Drama|Thriller",
-            "Sci-Fi",
-            "Romance|Drama",
-            "Horror",
-        ],
-    })
+    return pd.DataFrame(
+        {
+            "movieId": [0, 1, 2, 3, 4],
+            "title": [
+                "Alpha (2000)",
+                "Beta (2001)",
+                "Gamma (2002)",
+                "Delta (2003)",
+                "Epsilon (2004)",
+            ],
+            "genres": [
+                "Action|Comedy",
+                "Drama|Thriller",
+                "Sci-Fi",
+                "Romance|Drama",
+                "Horror",
+            ],
+        }
+    )
 
 
 @pytest.fixture
@@ -84,33 +87,25 @@ class TestUserProfilerRealData:
         assert real_profiler.has_real_data is True
 
     @pytest.mark.asyncio
-    async def test_known_user_returns_ratings(
-        self, real_profiler: UserProfilerAgent
-    ) -> None:
+    async def test_known_user_returns_ratings(self, real_profiler: UserProfilerAgent) -> None:
         result = await real_profiler.run({"user_id": 0})
         assert result["user_id"] == 0
         assert result["rating_count"] == 5
         assert len(result["ratings"]) == 5
 
     @pytest.mark.asyncio
-    async def test_unknown_user_returns_empty(
-        self, real_profiler: UserProfilerAgent
-    ) -> None:
+    async def test_unknown_user_returns_empty(self, real_profiler: UserProfilerAgent) -> None:
         result = await real_profiler.run({"user_id": 999})
         assert result["rating_count"] == 0
         assert result["embedding"] == [0.0] * EMBEDDING_DIM
 
     @pytest.mark.asyncio
-    async def test_embedding_dim_matches_store(
-        self, real_profiler: UserProfilerAgent
-    ) -> None:
+    async def test_embedding_dim_matches_store(self, real_profiler: UserProfilerAgent) -> None:
         result = await real_profiler.run({"user_id": 0})
         assert len(result["embedding"]) == EMBEDDING_DIM
 
     @pytest.mark.asyncio
-    async def test_ratings_include_title_and_genres(
-        self, real_profiler: UserProfilerAgent
-    ) -> None:
+    async def test_ratings_include_title_and_genres(self, real_profiler: UserProfilerAgent) -> None:
         result = await real_profiler.run({"user_id": 0})
         first = result["ratings"][0]
         assert first["title"] != ""
@@ -158,26 +153,20 @@ class TestContentAnalyzerRealData:
         assert len(result["items"]) == 1
 
     @pytest.mark.asyncio
-    async def test_items_have_year_from_title(
-        self, real_analyzer: ContentAnalyzerAgent
-    ) -> None:
+    async def test_items_have_year_from_title(self, real_analyzer: ContentAnalyzerAgent) -> None:
         result = await real_analyzer.run({"user_id": 0, "item_ids": [0]})
         item = result["items"][0]
         assert item["year"] == 2000
 
     @pytest.mark.asyncio
-    async def test_items_have_parsed_genres(
-        self, real_analyzer: ContentAnalyzerAgent
-    ) -> None:
+    async def test_items_have_parsed_genres(self, real_analyzer: ContentAnalyzerAgent) -> None:
         result = await real_analyzer.run({"user_id": 0, "item_ids": [0]})
         genres = result["items"][0]["genres"]
         assert "Action" in genres
         assert "Comedy" in genres
 
     @pytest.mark.asyncio
-    async def test_items_have_embedding(
-        self, real_analyzer: ContentAnalyzerAgent
-    ) -> None:
+    async def test_items_have_embedding(self, real_analyzer: ContentAnalyzerAgent) -> None:
         result = await real_analyzer.run({"user_id": 0, "item_ids": [1]})
         assert len(result["items"][0]["embedding"]) == EMBEDDING_DIM
 

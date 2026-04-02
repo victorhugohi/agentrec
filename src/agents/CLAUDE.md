@@ -1,0 +1,1 @@
+All agents inherit from BaseAgent in base.py. Every agent must implement async process(self, input: dict) -> dict. Use structured logging with the agent name as logger prefix. Cache expensive computations in self.memory. When adding a new agent, register it in the orchestrator's AGENT_REGISTRY dict.

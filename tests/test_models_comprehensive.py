@@ -10,9 +10,8 @@ from pathlib import Path
 import pytest
 import torch
 
-from src.models.ncf import NeuralCollaborativeFiltering
 from src.models.embeddings import EmbeddingStore
-
+from src.models.ncf import NeuralCollaborativeFiltering
 
 # ── Shared fixtures ──────────────────────────────────────────────────
 
@@ -20,9 +19,7 @@ from src.models.embeddings import EmbeddingStore
 @pytest.fixture
 def ncf_model() -> NeuralCollaborativeFiltering:
     """Standard-size NCF model for testing (64-dim, default MLP layers)."""
-    model = NeuralCollaborativeFiltering(
-        num_users=200, num_items=100, embedding_dim=64
-    )
+    model = NeuralCollaborativeFiltering(num_users=200, num_items=100, embedding_dim=64)
     model.eval()
     return model
 
@@ -31,7 +28,10 @@ def ncf_model() -> NeuralCollaborativeFiltering:
 def small_model() -> NeuralCollaborativeFiltering:
     """Small NCF model for fast tests."""
     model = NeuralCollaborativeFiltering(
-        num_users=50, num_items=30, embedding_dim=16, mlp_layers=[32, 16],
+        num_users=50,
+        num_items=30,
+        embedding_dim=16,
+        mlp_layers=[32, 16],
         dropout=0.0,
     )
     model.eval()
@@ -72,16 +72,12 @@ class TestNCFForwardPass:
         output = ncf_model(batch_users, batch_items)
         assert output.shape == (32, 1)
 
-    def test_single_pair_output_shape(
-        self, ncf_model: NeuralCollaborativeFiltering
-    ) -> None:
+    def test_single_pair_output_shape(self, ncf_model: NeuralCollaborativeFiltering) -> None:
         """Forward with a single pair produces shape (1, 1)."""
         output = ncf_model(torch.tensor([0]), torch.tensor([0]))
         assert output.shape == (1, 1)
 
-    def test_large_batch_output_shape(
-        self, ncf_model: NeuralCollaborativeFiltering
-    ) -> None:
+    def test_large_batch_output_shape(self, ncf_model: NeuralCollaborativeFiltering) -> None:
         """Forward with batch_size=256 produces shape (256, 1)."""
         users = torch.randint(0, 200, (256,))
         items = torch.randint(0, 100, (256,))
@@ -109,9 +105,7 @@ class TestNCFForwardPass:
         output = ncf_model(batch_users, batch_items)
         assert output.dtype == torch.float32
 
-    def test_eval_mode_deterministic(
-        self, ncf_model: NeuralCollaborativeFiltering
-    ) -> None:
+    def test_eval_mode_deterministic(self, ncf_model: NeuralCollaborativeFiltering) -> None:
         """In eval mode, same inputs produce identical outputs."""
         users = torch.tensor([0, 5, 10])
         items = torch.tensor([1, 2, 3])
@@ -154,30 +148,22 @@ class TestNCFForwardPass:
 class TestEmbeddingDimensions:
     """Test that all embedding layers produce vectors of the correct size."""
 
-    def test_gmf_user_embedding_dim(
-        self, ncf_model: NeuralCollaborativeFiltering
-    ) -> None:
+    def test_gmf_user_embedding_dim(self, ncf_model: NeuralCollaborativeFiltering) -> None:
         """GMF user embedding table has shape (num_users, embedding_dim)."""
         weight = ncf_model.gmf_user_embedding.weight
         assert weight.shape == (200, 64)
 
-    def test_gmf_item_embedding_dim(
-        self, ncf_model: NeuralCollaborativeFiltering
-    ) -> None:
+    def test_gmf_item_embedding_dim(self, ncf_model: NeuralCollaborativeFiltering) -> None:
         """GMF item embedding table has shape (num_items, embedding_dim)."""
         weight = ncf_model.gmf_item_embedding.weight
         assert weight.shape == (100, 64)
 
-    def test_mlp_user_embedding_dim(
-        self, ncf_model: NeuralCollaborativeFiltering
-    ) -> None:
+    def test_mlp_user_embedding_dim(self, ncf_model: NeuralCollaborativeFiltering) -> None:
         """MLP user embedding table has shape (num_users, embedding_dim)."""
         weight = ncf_model.mlp_user_embedding.weight
         assert weight.shape == (200, 64)
 
-    def test_mlp_item_embedding_dim(
-        self, ncf_model: NeuralCollaborativeFiltering
-    ) -> None:
+    def test_mlp_item_embedding_dim(self, ncf_model: NeuralCollaborativeFiltering) -> None:
         """MLP item embedding table has shape (num_items, embedding_dim)."""
         weight = ncf_model.mlp_item_embedding.weight
         assert weight.shape == (100, 64)
@@ -198,17 +184,13 @@ class TestEmbeddingDimensions:
 
     def test_different_embedding_dim(self) -> None:
         """Model respects a non-default embedding_dim=32."""
-        model = NeuralCollaborativeFiltering(
-            num_users=10, num_items=10, embedding_dim=32
-        )
+        model = NeuralCollaborativeFiltering(num_users=10, num_items=10, embedding_dim=32)
         assert model.gmf_user_embedding.weight.shape == (10, 32)
         assert model.mlp_item_embedding.weight.shape == (10, 32)
 
     def test_mlp_first_layer_input_matches_concat(self) -> None:
         """MLP tower first layer accepts 2 * embedding_dim inputs."""
-        model = NeuralCollaborativeFiltering(
-            num_users=10, num_items=10, embedding_dim=48
-        )
+        model = NeuralCollaborativeFiltering(num_users=10, num_items=10, embedding_dim=48)
         first_linear = model.mlp_tower[0]
         assert first_linear.in_features == 48 * 2
 
@@ -260,9 +242,7 @@ class TestPredictBatchScores:
         assert (scores >= 0.0).all()
         assert (scores <= 1.0).all()
 
-    def test_predict_batch_matches_forward(
-        self, ncf_model: NeuralCollaborativeFiltering
-    ) -> None:
+    def test_predict_batch_matches_forward(self, ncf_model: NeuralCollaborativeFiltering) -> None:
         """predict_batch produces identical scores to manual forward in eval mode."""
         users = torch.tensor([0, 10, 20, 30, 40])
         items = torch.tensor([5, 15, 25, 35, 45])
@@ -273,9 +253,7 @@ class TestPredictBatchScores:
 
         assert torch.allclose(actual, expected, atol=1e-6)
 
-    def test_predict_batch_small_batch_size(
-        self, ncf_model: NeuralCollaborativeFiltering
-    ) -> None:
+    def test_predict_batch_small_batch_size(self, ncf_model: NeuralCollaborativeFiltering) -> None:
         """predict_batch with batch_size=4 on 10 items still returns 10 scores."""
         users = torch.randint(0, 200, (10,))
         items = torch.randint(0, 100, (10,))
@@ -300,9 +278,7 @@ class TestPredictBatchScores:
         # sorted_indices maps back to original positions
         assert sorted_indices.shape == (50,)
 
-    def test_predict_batch_top_k_selection(
-        self, ncf_model: NeuralCollaborativeFiltering
-    ) -> None:
+    def test_predict_batch_top_k_selection(self, ncf_model: NeuralCollaborativeFiltering) -> None:
         """Top-k items by predict_batch score can be selected via topk."""
         user_ids = torch.full((20,), 0, dtype=torch.long)
         item_ids = torch.arange(0, 20)
@@ -346,9 +322,7 @@ class TestPredictBatchScores:
 class TestCheckpointRoundTrip:
     """Test save_checkpoint and load_pretrained preserve the model exactly."""
 
-    def test_round_trip_preserves_scores(
-        self, ncf_model: NeuralCollaborativeFiltering
-    ) -> None:
+    def test_round_trip_preserves_scores(self, ncf_model: NeuralCollaborativeFiltering) -> None:
         """Saved and loaded model produces identical scores."""
         users = torch.tensor([0, 5, 10])
         items = torch.tensor([1, 2, 3])
@@ -364,9 +338,7 @@ class TestCheckpointRoundTrip:
 
         assert torch.allclose(original, restored)
 
-    def test_round_trip_preserves_config(
-        self, ncf_model: NeuralCollaborativeFiltering
-    ) -> None:
+    def test_round_trip_preserves_config(self, ncf_model: NeuralCollaborativeFiltering) -> None:
         """Loaded model has the same num_users, num_items, embedding_dim."""
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "ncf.pt"
@@ -383,9 +355,7 @@ class TestCheckpointRoundTrip:
         with pytest.raises(FileNotFoundError):
             NeuralCollaborativeFiltering.load_pretrained("/no/such/file.pt")
 
-    def test_loaded_model_is_in_eval_mode(
-        self, ncf_model: NeuralCollaborativeFiltering
-    ) -> None:
+    def test_loaded_model_is_in_eval_mode(self, ncf_model: NeuralCollaborativeFiltering) -> None:
         """load_pretrained returns a model in eval mode."""
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "ncf.pt"

@@ -1,8 +1,9 @@
 """Tests for Pydantic schemas."""
 
 import pytest
+from pydantic import ValidationError
 
-from src.models.schemas import RecommendationRequest, RecommendationResponse, MovieItem
+from src.models.schemas import MovieItem, RecommendationRequest, RecommendationResponse
 
 
 def test_recommendation_request_defaults() -> None:
@@ -13,7 +14,7 @@ def test_recommendation_request_defaults() -> None:
 
 def test_recommendation_request_validation() -> None:
     """RecommendationRequest rejects top_k < 1."""
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         RecommendationRequest(user_id=1, top_k=0)
 
 

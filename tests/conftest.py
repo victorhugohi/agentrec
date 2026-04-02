@@ -2,11 +2,11 @@
 
 import pytest
 
-from src.models.embeddings import EmbeddingStore
-from src.agents.user_profiler import UserProfilerAgent
 from src.agents.content_analyzer import ContentAnalyzerAgent
-from src.agents.recsys_engine import RecsysEngineAgent
 from src.agents.orchestrator import OrchestratorAgent
+from src.agents.recsys_engine import RecsysEngineAgent
+from src.agents.user_profiler import UserProfilerAgent
+from src.models.embeddings import EmbeddingStore
 
 
 @pytest.fixture

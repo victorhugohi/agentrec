@@ -3,8 +3,8 @@
 import tempfile
 from pathlib import Path
 
-import torch
 import pytest
+import torch
 
 from src.models.ncf import NeuralCollaborativeFiltering
 
@@ -54,9 +54,7 @@ def test_predict_batch_matches_forward(model: NeuralCollaborativeFiltering) -> N
 
 def test_predict_batch_single_item(model: NeuralCollaborativeFiltering) -> None:
     """predict_batch works with a single user-item pair."""
-    scores = model.predict_batch(
-        torch.tensor([0]), torch.tensor([0]), batch_size=1
-    )
+    scores = model.predict_batch(torch.tensor([0]), torch.tensor([0]), batch_size=1)
     assert scores.shape == (1,)
     assert 0.0 <= scores.item() <= 1.0
 
@@ -115,9 +113,7 @@ def test_custom_mlp_layers() -> None:
 
 def test_dropout_zero_deterministic() -> None:
     """With dropout=0 the model is deterministic even in train mode."""
-    model = NeuralCollaborativeFiltering(
-        num_users=10, num_items=10, embedding_dim=8, dropout=0.0
-    )
+    model = NeuralCollaborativeFiltering(num_users=10, num_items=10, embedding_dim=8, dropout=0.0)
     model.train()
     u = torch.tensor([0, 1])
     i = torch.tensor([0, 1])

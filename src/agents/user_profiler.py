@@ -120,9 +120,7 @@ class UserProfilerAgent(BaseAgent):
 
         embedding = self._compute_embedding(ratings)
 
-        avg_rating = (
-            sum(r.rating for r in ratings) / len(ratings) if ratings else 0.0
-        )
+        avg_rating = sum(r.rating for r in ratings) / len(ratings) if ratings else 0.0
 
         output = UserProfileOutput(
             user_id=input_data.user_id,
@@ -133,8 +131,10 @@ class UserProfilerAgent(BaseAgent):
         )
         logger.info(
             "User %d profile: %d ratings, avg=%.4f, embedding_dim=%d",
-            output.user_id, output.rating_count,
-            output.avg_rating, len(output.embedding),
+            output.user_id,
+            output.rating_count,
+            output.avg_rating,
+            len(output.embedding),
         )
         return output.model_dump()
 
@@ -180,12 +180,14 @@ class UserProfilerAgent(BaseAgent):
             else:
                 genres = genres_raw if isinstance(genres_raw, list) else []
 
-            ratings.append(Rating(
-                item_id=int(row["movieId"]),
-                rating=float(row["rating"]),
-                title=str(row.get("title", "")),
-                genres=genres,
-            ))
+            ratings.append(
+                Rating(
+                    item_id=int(row["movieId"]),
+                    rating=float(row["rating"]),
+                    title=str(row.get("title", "")),
+                    genres=genres,
+                )
+            )
         return ratings
 
     @staticmethod
@@ -223,8 +225,5 @@ class UserProfilerAgent(BaseAgent):
         item_ids = [r.item_id for r in high_rated]
         vectors = self._embedding_store.item_embeddings_batch(item_ids)
 
-        mean_embedding = [
-            round(sum(col) / len(vectors), 4)
-            for col in zip(*vectors)
-        ]
+        mean_embedding = [round(sum(col) / len(vectors), 4) for col in zip(*vectors, strict=True)]
         return mean_embedding

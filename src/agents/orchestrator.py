@@ -5,9 +5,9 @@ import logging
 from typing import Any
 
 from src.agents.base import BaseAgent
-from src.agents.user_profiler import UserProfilerAgent
 from src.agents.content_analyzer import ContentAnalyzerAgent
 from src.agents.recsys_engine import RecsysEngineAgent
+from src.agents.user_profiler import UserProfilerAgent
 
 logger = logging.getLogger(__name__)
 
@@ -80,11 +80,13 @@ class OrchestratorAgent(BaseAgent):
         )
 
         # Step 2: Run recsys_engine with combined outputs (sequential).
-        recommendations = await self.recsys_engine.run({
-            "user_profile": user_profile,
-            "content_features": content_features,
-            "top_k": top_k,
-        })
+        recommendations = await self.recsys_engine.run(
+            {
+                "user_profile": user_profile,
+                "content_features": content_features,
+                "top_k": top_k,
+            }
+        )
 
         # --- Assemble phase ---
         return {
@@ -97,9 +99,7 @@ class OrchestratorAgent(BaseAgent):
             },
         }
 
-    def _build_plan(
-        self, user_id: int, top_k: int
-    ) -> list[dict[str, Any]]:
+    def _build_plan(self, user_id: int, top_k: int) -> list[dict[str, Any]]:
         """Build the execution plan describing which agents run and when.
 
         Args:

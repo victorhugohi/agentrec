@@ -1,6 +1,7 @@
 """Tests for data pipeline Pydantic schemas."""
 
 import pytest
+from pydantic import ValidationError
 
 from src.data.schemas import DataRecommendationRequest, Movie, Rating, UserHistory
 
@@ -33,10 +34,7 @@ class TestMovie:
 
 class TestUserHistory:
     def test_user_with_ratings(self) -> None:
-        ratings = [
-            Rating(user_id=0, movie_id=i, rating=0.5, timestamp=i)
-            for i in range(5)
-        ]
+        ratings = [Rating(user_id=0, movie_id=i, rating=0.5, timestamp=i) for i in range(5)]
         h = UserHistory(user_id=0, ratings=ratings)
         assert h.user_id == 0
         assert len(h.ratings) == 5
@@ -53,16 +51,14 @@ class TestDataRecommendationRequest:
         assert req.exclude_seen is True
 
     def test_custom_values(self) -> None:
-        req = DataRecommendationRequest(
-            user_id=5, n_recommendations=20, exclude_seen=False
-        )
+        req = DataRecommendationRequest(user_id=5, n_recommendations=20, exclude_seen=False)
         assert req.n_recommendations == 20
         assert req.exclude_seen is False
 
     def test_validation_min(self) -> None:
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             DataRecommendationRequest(user_id=0, n_recommendations=0)
 
     def test_validation_max(self) -> None:
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             DataRecommendationRequest(user_id=0, n_recommendations=501)

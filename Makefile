@@ -49,6 +49,13 @@ train: ## Run the training script inside the app container
 shell: ## Open a bash shell in the app container
 	docker compose run --rm app bash
 
+monitoring: .env ## Start the full stack with Prometheus and Grafana
+	docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
+	@echo "Stack running:"
+	@echo "  API:        http://localhost:$${API_PORT:-8000}"
+	@echo "  Prometheus: http://localhost:9090"
+	@echo "  Grafana:    http://localhost:3000  (admin / admin)"
+
 # ── Convenience ───────────────────────────────────────────────────────
 
 clean: ## Remove containers, volumes, and built images

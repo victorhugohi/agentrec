@@ -56,7 +56,9 @@ class RecsysEngineAgent(BaseAgent):
         else:
             logger.info(
                 "Initializing NCF model (users=%d, items=%d, dim=%d)",
-                _NUM_USERS, _NUM_ITEMS, _EMBEDDING_DIM,
+                _NUM_USERS,
+                _NUM_ITEMS,
+                _EMBEDDING_DIM,
             )
             self._model = NeuralCollaborativeFiltering(
                 num_users=_NUM_USERS,
@@ -143,7 +145,7 @@ class RecsysEngineAgent(BaseAgent):
         scores = self._model.predict_batch(user_tensor, item_tensor)
 
         scored_items: list[ScoredItem] = []
-        for item, score in zip(items, scores.tolist()):
+        for item, score in zip(items, scores.tolist(), strict=True):
             scored_items.append(
                 ScoredItem(
                     item_id=item.item_id,

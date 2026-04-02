@@ -5,16 +5,15 @@ from __future__ import annotations
 import logging
 import re
 import time
-from typing import Any
 
 import asyncpg
 import pandas as pd
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import PlainTextResponse
 
 from src.agents.orchestrator import OrchestratorAgent
 from src.api.dependencies import get_db_pool, get_model, get_orchestrator, get_splits
-from src.api.middleware import metrics_collector, request_id_var
+from src.monitoring import hub as metrics_hub, request_id_var
 from src.data.loader import DataSplits
 from src.models.ncf import NeuralCollaborativeFiltering
 from src.models.schemas import (
@@ -73,13 +72,15 @@ async def recommend(
     """
     start = time.perf_counter()
 
-    result = await orchestrator.run({
-        "user_id": request.user_id,
-        "top_k": request.top_k,
-    })
+    result = await orchestrator.run(
+        {
+            "user_id": request.user_id,
+            "top_k": request.top_k,
+        }
+    )
 
     duration = time.perf_counter() - start
-    metrics_collector.record_model_inference(duration)
+    metrics_hub.record_model_inference(duration)
 
     recommendations = [MovieItem(**item) for item in result["recommendations"]]
 
@@ -108,13 +109,15 @@ async def recommend_simple(
     """Simple recommendation endpoint with sensible defaults."""
     start = time.perf_counter()
 
-    result = await orchestrator.run({
-        "user_id": user_id,
-        "top_k": top_k,
-    })
+    result = await orchestrator.run(
+        {
+            "user_id": user_id,
+            "top_k": top_k,
+        }
+    )
 
     duration = time.perf_counter() - start
-    metrics_collector.record_model_inference(duration)
+    metrics_hub.record_model_inference(duration)
 
     recommendations = [MovieItem(**item) for item in result["recommendations"]]
 
@@ -177,7 +180,8 @@ async def _user_history_from_db(pool: asyncpg.Pool, user_id: int) -> UserHistory
 def _user_history_from_splits(splits: DataSplits, user_id: int) -> UserHistoryResponse:
     """Fetch user history from in-memory DataSplits."""
     all_ratings = pd.concat(
-        [splits.train, splits.val, splits.test], ignore_index=True,
+        [splits.train, splits.val, splits.test],
+        ignore_index=True,
     )
     user_rows = all_ratings[all_ratings["userId"] == user_id]
 
@@ -194,12 +198,14 @@ def _user_history_from_splits(splits: DataSplits, user_id: int) -> UserHistoryRe
         else:
             genres = genres_raw if isinstance(genres_raw, list) else []
 
-        ratings.append(Rating(
-            item_id=int(row["movieId"]),
-            rating=float(row["rating"]),
-            title=str(row.get("title", "")),
-            genres=genres,
-        ))
+        ratings.append(
+            Rating(
+                item_id=int(row["movieId"]),
+                rating=float(row["rating"]),
+                title=str(row.get("title", "")),
+                genres=genres,
+            )
+        )
 
     avg = sum(r.rating for r in ratings) / len(ratings) if ratings else 0.0
 
@@ -236,7 +242,9 @@ async def movie_search(
 
 
 async def _movie_search_from_db(
-    pool: asyncpg.Pool, q: str, limit: int,
+    pool: asyncpg.Pool,
+    q: str,
+    limit: int,
 ) -> MovieSearchResponse:
     """Search movies via PostgreSQL ILIKE."""
     from src.data.database import search_movies
@@ -255,7 +263,9 @@ async def _movie_search_from_db(
 
 
 def _movie_search_from_splits(
-    splits: DataSplits, q: str, limit: int,
+    splits: DataSplits,
+    q: str,
+    limit: int,
 ) -> MovieSearchResponse:
     """Search movies from in-memory DataSplits."""
     query_lower = q.lower()
@@ -273,12 +283,14 @@ def _movie_search_from_splits(
             year_match = _YEAR_RE.search(title)
             year = int(year_match.group(1)) if year_match else 0
 
-            matches.append(MovieSearchResult(
-                movie_id=int(row["movieId"]),
-                title=title,
-                genres=genres,
-                year=year,
-            ))
+            matches.append(
+                MovieSearchResult(
+                    movie_id=int(row["movieId"]),
+                    title=title,
+                    genres=genres,
+                    year=year,
+                )
+            )
             if len(matches) >= limit:
                 break
 
@@ -305,11 +317,13 @@ async def health(
         orchestrator.recsys_engine,
     ]:
         has_real = getattr(agent, "has_real_data", False)
-        agents.append(AgentHealth(
-            name=agent.agent_name,
-            status="ok",
-            has_real_data=has_real,
-        ))
+        agents.append(
+            AgentHealth(
+                name=agent.agent_name,
+                status="ok",
+                has_real_data=has_real,
+            )
+        )
 
     data_loaded = splits is not None or pool is not None
     overall = "ok" if model is not None and data_loaded else "degraded"
@@ -320,6 +334,7 @@ async def health(
     if pool is not None:
         try:
             from src.data.database import fetch_movie_count, fetch_user_count
+
             num_users = await fetch_user_count(pool)
             num_movies = await fetch_movie_count(pool)
         except Exception:
@@ -347,6 +362,6 @@ async def health(
 async def metrics() -> PlainTextResponse:
     """Prometheus-compatible metrics endpoint."""
     return PlainTextResponse(
-        content=metrics_collector.prometheus_text(),
+        content=metrics_hub.prometheus_text(),
         media_type="text/plain; version=0.0.4; charset=utf-8",
     )

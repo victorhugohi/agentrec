@@ -6,17 +6,16 @@ graceful handling of missing movies.
 """
 
 from typing import Any
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
 from src.agents.base import BaseAgent
-from src.agents.orchestrator import OrchestratorAgent
-from src.agents.user_profiler import UserProfilerAgent
 from src.agents.content_analyzer import ContentAnalyzerAgent
+from src.agents.orchestrator import OrchestratorAgent
 from src.agents.recsys_engine import RecsysEngineAgent
+from src.agents.user_profiler import UserProfilerAgent
 from src.models.embeddings import EmbeddingStore
-
 
 # ── Shared fixtures ──────────────────────────────────────────────────
 
@@ -148,7 +147,9 @@ class TestOrchestratorWithMocks:
     def mock_profiler_output(self) -> dict[str, Any]:
         return {
             "user_id": 1,
-            "ratings": [{"item_id": 10, "rating": 5.0, "title": "Mock Movie", "genres": ["Action"]}],
+            "ratings": [
+                {"item_id": 10, "rating": 5.0, "title": "Mock Movie", "genres": ["Action"]}
+            ],
             "embedding": [0.1] * EMBEDDING_DIM,
             "rating_count": 1,
             "avg_rating": 5.0,
@@ -289,9 +290,7 @@ class TestOrchestratorWithMocks:
         assert groups == [0, 0, 1]
 
     @pytest.mark.asyncio
-    async def test_orchestrator_parallel_execution(
-        self, store: EmbeddingStore
-    ) -> None:
+    async def test_orchestrator_parallel_execution(self, store: EmbeddingStore) -> None:
         """Profiler and analyzer run concurrently (both start before either finishes).
 
         We verify this by checking that asyncio.gather is used — if they ran
@@ -307,8 +306,11 @@ class TestOrchestratorWithMocks:
             await asyncio.sleep(0)  # yield to event loop
             call_order.append("profiler_end")
             return {
-                "user_id": 1, "ratings": [], "embedding": [0.0] * 64,
-                "rating_count": 0, "avg_rating": 0.0,
+                "user_id": 1,
+                "ratings": [],
+                "embedding": [0.0] * 64,
+                "rating_count": 0,
+                "avg_rating": 0.0,
             }
 
         async def mock_analyzer_run(payload: dict[str, Any]) -> dict[str, Any]:
@@ -346,9 +348,7 @@ class TestUserProfilerVectors:
     """Verify user profiler returns correct embedding shapes and values."""
 
     @pytest.mark.asyncio
-    async def test_embedding_dimension_matches_store(
-        self, profiler: UserProfilerAgent
-    ) -> None:
+    async def test_embedding_dimension_matches_store(self, profiler: UserProfilerAgent) -> None:
         """Embedding length equals the EmbeddingStore's embedding_dim."""
         result = await profiler.run({"user_id": 1})
         assert len(result["embedding"]) == EMBEDDING_DIM
@@ -373,9 +373,7 @@ class TestUserProfilerVectors:
         assert any(x != 0.0 for x in result["embedding"])
 
     @pytest.mark.asyncio
-    async def test_different_users_different_embeddings(
-        self, profiler: UserProfilerAgent
-    ) -> None:
+    async def test_different_users_different_embeddings(self, profiler: UserProfilerAgent) -> None:
         """Two different users produce different embedding vectors."""
         r1 = await profiler.run({"user_id": 1})
         r2 = await profiler.run({"user_id": 2})
@@ -393,9 +391,7 @@ class TestUserProfilerVectors:
             assert isinstance(rating["rating"], float)
 
     @pytest.mark.asyncio
-    async def test_embedding_consistent_across_calls(
-        self, profiler: UserProfilerAgent
-    ) -> None:
+    async def test_embedding_consistent_across_calls(self, profiler: UserProfilerAgent) -> None:
         """Same user_id produces the same embedding on repeated calls."""
         r1 = await profiler.run({"user_id": 3})
         profiler.clear_memory()
@@ -418,17 +414,13 @@ class TestContentAnalyzerMissingMovies:
     """Verify content analyzer handles missing/invalid movie IDs gracefully."""
 
     @pytest.mark.asyncio
-    async def test_single_missing_id_returns_empty(
-        self, analyzer: ContentAnalyzerAgent
-    ) -> None:
+    async def test_single_missing_id_returns_empty(self, analyzer: ContentAnalyzerAgent) -> None:
         """A single nonexistent item_id results in zero items returned."""
         result = await analyzer.run({"user_id": 1, "item_ids": [999999]})
         assert result["items"] == []
 
     @pytest.mark.asyncio
-    async def test_all_missing_ids_returns_empty(
-        self, analyzer: ContentAnalyzerAgent
-    ) -> None:
+    async def test_all_missing_ids_returns_empty(self, analyzer: ContentAnalyzerAgent) -> None:
         """Multiple nonexistent IDs all result in zero items."""
         result = await analyzer.run({"user_id": 1, "item_ids": [8888, 9999, 7777]})
         assert result["items"] == []
@@ -443,9 +435,7 @@ class TestContentAnalyzerMissingMovies:
         assert returned_ids == {1, 50}
 
     @pytest.mark.asyncio
-    async def test_no_item_ids_returns_full_catalog(
-        self, analyzer: ContentAnalyzerAgent
-    ) -> None:
+    async def test_no_item_ids_returns_full_catalog(self, analyzer: ContentAnalyzerAgent) -> None:
         """Omitting item_ids returns the entire mock catalog."""
         result = await analyzer.run({"user_id": 1})
         assert len(result["items"]) == 10
@@ -459,34 +449,26 @@ class TestContentAnalyzerMissingMovies:
         assert len(result["items"]) == 10
 
     @pytest.mark.asyncio
-    async def test_duplicate_valid_ids(
-        self, analyzer: ContentAnalyzerAgent
-    ) -> None:
+    async def test_duplicate_valid_ids(self, analyzer: ContentAnalyzerAgent) -> None:
         """Duplicate IDs return duplicate items (no dedup)."""
         result = await analyzer.run({"user_id": 1, "item_ids": [1, 1, 1]})
         assert len(result["items"]) == 3
         assert all(item["item_id"] == 1 for item in result["items"])
 
     @pytest.mark.asyncio
-    async def test_negative_id_treated_as_missing(
-        self, analyzer: ContentAnalyzerAgent
-    ) -> None:
+    async def test_negative_id_treated_as_missing(self, analyzer: ContentAnalyzerAgent) -> None:
         """Negative item IDs are not in the catalog and are skipped."""
         result = await analyzer.run({"user_id": 1, "item_ids": [-1, -100]})
         assert result["items"] == []
 
     @pytest.mark.asyncio
-    async def test_missing_items_still_sets_user_id(
-        self, analyzer: ContentAnalyzerAgent
-    ) -> None:
+    async def test_missing_items_still_sets_user_id(self, analyzer: ContentAnalyzerAgent) -> None:
         """Response includes correct user_id even when all items are missing."""
         result = await analyzer.run({"user_id": 42, "item_ids": [99999]})
         assert result["user_id"] == 42
 
     @pytest.mark.asyncio
-    async def test_returned_items_have_embeddings(
-        self, analyzer: ContentAnalyzerAgent
-    ) -> None:
+    async def test_returned_items_have_embeddings(self, analyzer: ContentAnalyzerAgent) -> None:
         """Every returned item has an embedding of correct dimension."""
         result = await analyzer.run({"user_id": 1, "item_ids": [1, 50]})
         for item in result["items"]:
@@ -494,9 +476,7 @@ class TestContentAnalyzerMissingMovies:
             assert all(isinstance(x, float) for x in item["embedding"])
 
     @pytest.mark.asyncio
-    async def test_returned_items_have_full_metadata(
-        self, analyzer: ContentAnalyzerAgent
-    ) -> None:
+    async def test_returned_items_have_full_metadata(self, analyzer: ContentAnalyzerAgent) -> None:
         """Valid items include title, genres, year, and tags."""
         result = await analyzer.run({"user_id": 1, "item_ids": [296]})
         item = result["items"][0]

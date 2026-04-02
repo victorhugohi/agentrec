@@ -71,7 +71,8 @@ def load_data() -> DataSplits | None:
     if _splits is not None:
         logger.info(
             "Loaded data: %d users, %d movies",
-            _splits.num_users, _splits.num_movies,
+            _splits.num_users,
+            _splits.num_movies,
         )
     else:
         logger.warning("No processed data found in %s", settings.data_dir)
@@ -127,8 +128,12 @@ def build_orchestrator() -> OrchestratorAgent:
         content_analyzer=content_analyzer,
         recsys_engine=recsys_engine,
     )
-    logger.info("Orchestrator built (model=%s, db=%s, data=%s)",
-                _model is not None, db_pool is not None, _splits is not None)
+    logger.info(
+        "Orchestrator built (model=%s, db=%s, data=%s)",
+        _model is not None,
+        db_pool is not None,
+        _splits is not None,
+    )
     return _orchestrator
 
 

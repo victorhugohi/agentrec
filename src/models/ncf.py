@@ -9,7 +9,7 @@ Architecture diagram::
     user_id ──┬──► GMF_user_emb ──┐
               │                    ├──► element-wise multiply ──┐
     item_id ──┼──► GMF_item_emb ──┘                            │
-              │                                                 ├──► concat ──► Linear(1) ──► sigmoid
+              │                                                 ├─► concat ─► Linear(1) ─► sigmoid
               ├──► MLP_user_emb ──┐                            │
               │                    ├──► concat ──► MLP layers ──┘
               └──► MLP_item_emb ──┘
@@ -125,9 +125,7 @@ class NeuralCollaborativeFiltering(nn.Module):
     # Forward pass
     # ------------------------------------------------------------------
 
-    def forward(
-        self, user_ids: torch.Tensor, item_ids: torch.Tensor
-    ) -> torch.Tensor:
+    def forward(self, user_ids: torch.Tensor, item_ids: torch.Tensor) -> torch.Tensor:
         """Compute predicted interaction scores for user-item pairs.
 
         Runs both GMF and MLP paths in parallel, concatenates their outputs,

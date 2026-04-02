@@ -1,7 +1,8 @@
 """Tests for the BaseAgent abstract class."""
 
-import pytest
 from typing import Any
+
+import pytest
 
 from src.agents.base import BaseAgent
 

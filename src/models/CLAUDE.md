@@ -1,0 +1,1 @@
+All models use PyTorch. Embedding dimensions must match config.EMBEDDING_DIM (default 64). Forward methods accept batched tensors. Never hardcode device — use self.device from BaseModel. Save checkpoints with torch.save including both model_state_dict and optimizer_state_dict.

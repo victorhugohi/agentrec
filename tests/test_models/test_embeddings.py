@@ -15,9 +15,7 @@ def store() -> EmbeddingStore:
 @pytest.fixture
 def model() -> NeuralCollaborativeFiltering:
     """Return a small NCF model."""
-    return NeuralCollaborativeFiltering(
-        num_users=50, num_items=30, embedding_dim=16
-    )
+    return NeuralCollaborativeFiltering(num_users=50, num_items=30, embedding_dim=16)
 
 
 def test_fallback_embedding_dim(store: EmbeddingStore) -> None:
@@ -46,9 +44,7 @@ def test_has_model_false_by_default(store: EmbeddingStore) -> None:
     assert store.has_model is False
 
 
-def test_load_from_model(
-    store: EmbeddingStore, model: NeuralCollaborativeFiltering
-) -> None:
+def test_load_from_model(store: EmbeddingStore, model: NeuralCollaborativeFiltering) -> None:
     """After load_from_model, embeddings come from the NCF model."""
     store.load_from_model(model)
 

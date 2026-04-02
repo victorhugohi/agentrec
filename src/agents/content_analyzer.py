@@ -17,16 +17,76 @@ logger = logging.getLogger(__name__)
 
 # Mock movie catalog used when no real data is loaded.
 _MOCK_CATALOG: list[dict[str, Any]] = [
-    {"item_id": 1, "title": "Toy Story", "genres": ["Animation", "Comedy"], "year": 1995, "tags": ["pixar", "fun"]},
-    {"item_id": 32, "title": "Twelve Monkeys", "genres": ["Sci-Fi", "Thriller"], "year": 1995, "tags": ["time-travel", "dystopia"]},
-    {"item_id": 47, "title": "Seven", "genres": ["Crime", "Thriller"], "year": 1995, "tags": ["dark", "mystery"]},
-    {"item_id": 50, "title": "Star Wars", "genres": ["Action", "Sci-Fi"], "year": 1977, "tags": ["space", "classic"]},
-    {"item_id": 110, "title": "Braveheart", "genres": ["Drama", "War"], "year": 1995, "tags": ["epic", "historical"]},
-    {"item_id": 150, "title": "Apollo 13", "genres": ["Drama", "Adventure"], "year": 1995, "tags": ["space", "based-on-true-story"]},
-    {"item_id": 260, "title": "The Thing", "genres": ["Horror", "Sci-Fi"], "year": 1982, "tags": ["alien", "suspense"]},
-    {"item_id": 296, "title": "Pulp Fiction", "genres": ["Crime", "Drama"], "year": 1994, "tags": ["tarantino", "nonlinear"]},
-    {"item_id": 318, "title": "Shawshank Redemption", "genres": ["Drama"], "year": 1994, "tags": ["prison", "hope"]},
-    {"item_id": 356, "title": "Forrest Gump", "genres": ["Comedy", "Drama"], "year": 1994, "tags": ["heartwarming", "classic"]},
+    {
+        "item_id": 1,
+        "title": "Toy Story",
+        "genres": ["Animation", "Comedy"],
+        "year": 1995,
+        "tags": ["pixar", "fun"],
+    },
+    {
+        "item_id": 32,
+        "title": "Twelve Monkeys",
+        "genres": ["Sci-Fi", "Thriller"],
+        "year": 1995,
+        "tags": ["time-travel", "dystopia"],
+    },
+    {
+        "item_id": 47,
+        "title": "Seven",
+        "genres": ["Crime", "Thriller"],
+        "year": 1995,
+        "tags": ["dark", "mystery"],
+    },
+    {
+        "item_id": 50,
+        "title": "Star Wars",
+        "genres": ["Action", "Sci-Fi"],
+        "year": 1977,
+        "tags": ["space", "classic"],
+    },
+    {
+        "item_id": 110,
+        "title": "Braveheart",
+        "genres": ["Drama", "War"],
+        "year": 1995,
+        "tags": ["epic", "historical"],
+    },
+    {
+        "item_id": 150,
+        "title": "Apollo 13",
+        "genres": ["Drama", "Adventure"],
+        "year": 1995,
+        "tags": ["space", "based-on-true-story"],
+    },
+    {
+        "item_id": 260,
+        "title": "The Thing",
+        "genres": ["Horror", "Sci-Fi"],
+        "year": 1982,
+        "tags": ["alien", "suspense"],
+    },
+    {
+        "item_id": 296,
+        "title": "Pulp Fiction",
+        "genres": ["Crime", "Drama"],
+        "year": 1994,
+        "tags": ["tarantino", "nonlinear"],
+    },
+    {
+        "item_id": 318,
+        "title": "Shawshank Redemption",
+        "genres": ["Drama"],
+        "year": 1994,
+        "tags": ["prison", "hope"],
+    },
+    {
+        "item_id": 356,
+        "title": "Forrest Gump",
+        "genres": ["Comedy", "Drama"],
+        "year": 1994,
+        "tags": ["heartwarming", "classic"],
+    },
 ]
 _CATALOG_INDEX: dict[int, dict[str, Any]] = {m["item_id"]: m for m in _MOCK_CATALOG}
 
@@ -102,7 +162,8 @@ class ContentAnalyzerAgent(BaseAgent):
         input_data = ContentAnalyzerInput(**payload)
         logger.info(
             "Analyzing content for user %d (requested %d specific items)",
-            input_data.user_id, len(input_data.item_ids),
+            input_data.user_id,
+            len(input_data.item_ids),
         )
 
         if self._db_pool is not None:
@@ -114,7 +175,9 @@ class ContentAnalyzerAgent(BaseAgent):
 
         logger.info(
             "Returning %d candidate items (embedding_dim=%d) for user %d",
-            len(items), self._embedding_store.embedding_dim, input_data.user_id,
+            len(items),
+            self._embedding_store.embedding_dim,
+            input_data.user_id,
         )
 
         output = ContentAnalyzerOutput(user_id=input_data.user_id, items=items)
@@ -136,24 +199,22 @@ class ContentAnalyzerAgent(BaseAgent):
         items: list[ContentItem] = []
         for row in rows:
             embedding = self._embedding_store.item_embedding(row["movie_id"])
-            items.append(ContentItem(
-                item_id=row["movie_id"],
-                title=row["title"],
-                genres=row["genres"],
-                year=row["year"],
-                tags=[],
-                embedding=embedding,
-            ))
+            items.append(
+                ContentItem(
+                    item_id=row["movie_id"],
+                    title=row["title"],
+                    genres=row["genres"],
+                    year=row["year"],
+                    tags=[],
+                    embedding=embedding,
+                )
+            )
         return items
 
     def _load_real_items(self, item_ids: list[int]) -> list[ContentItem]:
         """Load items from the real movie index."""
         if item_ids:
-            raw_items = [
-                self._movie_index[iid]
-                for iid in item_ids
-                if iid in self._movie_index
-            ]
+            raw_items = [self._movie_index[iid] for iid in item_ids if iid in self._movie_index]
         else:
             raw_items = list(self._movie_index.values())
 
@@ -166,9 +227,7 @@ class ContentAnalyzerAgent(BaseAgent):
     def _load_mock_items(self, item_ids: list[int]) -> list[ContentItem]:
         """Load items from the mock catalog."""
         if item_ids:
-            raw_items = [
-                _CATALOG_INDEX[iid] for iid in item_ids if iid in _CATALOG_INDEX
-            ]
+            raw_items = [_CATALOG_INDEX[iid] for iid in item_ids if iid in _CATALOG_INDEX]
         else:
             raw_items = _MOCK_CATALOG
 

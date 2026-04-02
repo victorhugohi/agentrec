@@ -1,0 +1,1 @@
+All endpoints use Pydantic response models. Errors return structured JSON with error_code, message, and details fields. Use dependency injection for db sessions and model instances. Add OpenAPI tags and descriptions to every endpoint.

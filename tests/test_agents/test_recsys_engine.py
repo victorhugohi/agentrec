@@ -2,9 +2,9 @@
 
 import pytest
 
+from src.agents.content_analyzer import ContentAnalyzerAgent
 from src.agents.recsys_engine import RecsysEngineAgent
 from src.agents.user_profiler import UserProfilerAgent
-from src.agents.content_analyzer import ContentAnalyzerAgent
 
 
 @pytest.mark.asyncio
@@ -17,11 +17,13 @@ async def test_engine_returns_scored_items(
     profile = await user_profiler.run({"user_id": 1})
     content = await content_analyzer.run({"user_id": 1})
 
-    result = await recsys_engine.run({
-        "user_profile": profile,
-        "content_features": content,
-        "top_k": 5,
-    })
+    result = await recsys_engine.run(
+        {
+            "user_profile": profile,
+            "content_features": content,
+            "top_k": 5,
+        }
+    )
 
     ranked = result["ranked_items"]
     assert len(ranked) == 5
@@ -40,11 +42,13 @@ async def test_engine_scores_in_valid_range(
     profile = await user_profiler.run({"user_id": 1})
     content = await content_analyzer.run({"user_id": 1})
 
-    result = await recsys_engine.run({
-        "user_profile": profile,
-        "content_features": content,
-        "top_k": 10,
-    })
+    result = await recsys_engine.run(
+        {
+            "user_profile": profile,
+            "content_features": content,
+            "top_k": 10,
+        }
+    )
 
     for item in result["ranked_items"]:
         assert 0.0 <= item["score"] <= 1.0
@@ -60,11 +64,13 @@ async def test_engine_respects_top_k(
     profile = await user_profiler.run({"user_id": 1})
     content = await content_analyzer.run({"user_id": 1})
 
-    result = await recsys_engine.run({
-        "user_profile": profile,
-        "content_features": content,
-        "top_k": 3,
-    })
+    result = await recsys_engine.run(
+        {
+            "user_profile": profile,
+            "content_features": content,
+            "top_k": 3,
+        }
+    )
 
     assert len(result["ranked_items"]) == 3
 
@@ -79,11 +85,13 @@ async def test_engine_items_have_metadata(
     profile = await user_profiler.run({"user_id": 1})
     content = await content_analyzer.run({"user_id": 1})
 
-    result = await recsys_engine.run({
-        "user_profile": profile,
-        "content_features": content,
-        "top_k": 10,
-    })
+    result = await recsys_engine.run(
+        {
+            "user_profile": profile,
+            "content_features": content,
+            "top_k": 10,
+        }
+    )
 
     for item in result["ranked_items"]:
         assert item["title"] != ""
@@ -99,11 +107,13 @@ async def test_engine_empty_candidates(
     profile = await user_profiler.run({"user_id": 1})
     empty_content = {"user_id": 1, "items": []}
 
-    result = await recsys_engine.run({
-        "user_profile": profile,
-        "content_features": empty_content,
-        "top_k": 5,
-    })
+    result = await recsys_engine.run(
+        {
+            "user_profile": profile,
+            "content_features": empty_content,
+            "top_k": 5,
+        }
+    )
 
     assert result["ranked_items"] == []
 

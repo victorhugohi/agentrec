@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from unittest.mock import patch
-
 import pandas as pd
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -11,7 +9,6 @@ from httpx import ASGITransport, AsyncClient
 from src.api import dependencies as deps
 from src.data.loader import DataSplits
 from src.models.ncf import NeuralCollaborativeFiltering
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -25,33 +22,39 @@ _NUM_ITEMS = 5
 def _wire_dependencies() -> None:  # noqa: ANN202
     """Patch module-level singletons so tests run without real infra."""
     model = NeuralCollaborativeFiltering(
-        num_users=_NUM_USERS, num_items=_NUM_ITEMS, embedding_dim=32,
+        num_users=_NUM_USERS,
+        num_items=_NUM_ITEMS,
+        embedding_dim=32,
     )
     model.eval()
 
-    ratings = pd.DataFrame({
-        "userId": [0, 0, 0, 1, 1, 1, 2, 2, 2],
-        "movieId": [0, 1, 2, 0, 1, 3, 2, 3, 4],
-        "rating": [0.9, 0.7, 0.3, 0.5, 0.8, 0.6, 0.4, 0.9, 0.2],
-        "timestamp": list(range(9)),
-    })
-    movies = pd.DataFrame({
-        "movieId": [0, 1, 2, 3, 4],
-        "title": [
-            "Alpha (2000)",
-            "Beta (2001)",
-            "Gamma (2002)",
-            "Delta (2003)",
-            "Epsilon (2004)",
-        ],
-        "genres": [
-            "Action|Comedy",
-            "Drama",
-            "Sci-Fi|Thriller",
-            "Romance",
-            "Horror",
-        ],
-    })
+    ratings = pd.DataFrame(
+        {
+            "userId": [0, 0, 0, 1, 1, 1, 2, 2, 2],
+            "movieId": [0, 1, 2, 0, 1, 3, 2, 3, 4],
+            "rating": [0.9, 0.7, 0.3, 0.5, 0.8, 0.6, 0.4, 0.9, 0.2],
+            "timestamp": list(range(9)),
+        }
+    )
+    movies = pd.DataFrame(
+        {
+            "movieId": [0, 1, 2, 3, 4],
+            "title": [
+                "Alpha (2000)",
+                "Beta (2001)",
+                "Gamma (2002)",
+                "Delta (2003)",
+                "Epsilon (2004)",
+            ],
+            "genres": [
+                "Action|Comedy",
+                "Drama",
+                "Sci-Fi|Thriller",
+                "Romance",
+                "Horror",
+            ],
+        }
+    )
 
     splits = DataSplits(
         train=ratings.iloc[:6],
@@ -78,7 +81,9 @@ def _wire_dependencies() -> None:  # noqa: ANN202
 
     all_ratings = pd.concat([splits.train, splits.val, splits.test], ignore_index=True)
     profiler = UserProfilerAgent(
-        embedding_store=store, ratings_df=all_ratings, movies_df=movies,
+        embedding_store=store,
+        ratings_df=all_ratings,
+        movies_df=movies,
     )
     analyzer = ContentAnalyzerAgent(embedding_store=store, movies_df=movies)
     engine = RecsysEngineAgent(model=model, embedding_store=store)
